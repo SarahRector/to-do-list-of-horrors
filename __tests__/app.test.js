@@ -23,8 +23,8 @@ describe('routes', () => {
     const signInData = await fakeRequest(app)
       .post('/auth/signup')
       .send({
-        email: 'sar@ah.com',
-        password: '12345'
+        email: 'user1@user.com',
+        password: '1234'
       });
 
     token = signInData.body.token;
@@ -39,6 +39,12 @@ describe('routes', () => {
 
   test('returns a new todo item when creating a new todo item', async(done) => {
 
+    const testMonsterToDo = {
+      ...newMonsterToDo,
+      id: 4,
+      owner_id: 2
+    };
+
     const data = await fakeRequest(app)
       .post('/api/monster_to_do')
       .send(newMonsterToDo)
@@ -46,7 +52,85 @@ describe('routes', () => {
       .expect('Content-Type', /json/)
       .expect(200);
 
-    expect(data.body).toEqual(newMonsterToDo);
+    expect(data.body).toEqual(testMonsterToDo);
+
+    done();
+
+  });
+
+  test('returns all todos for the user when hitting GET /monster_to_do', async(done) => {
+    const expected = [
+      {
+        id: 4,
+        todo: 'scare people',
+        completed: false,
+        owner_id: 2
+      },
+    ];
+
+    const data = await fakeRequest(app)
+      .get('/api/monster_to_do')
+      .set('Authorization', token)
+      .expect('Content-Type', /json/)
+      .expect(200);
+
+    expect(data.body).toEqual(expected);
 
     done();
   });
+
+  test('returns a single todo for the user when hitting GET /monster_to_do/:id', async(done) => {
+    const expected = 
+      {
+        id: 4,
+        todo: 'scare people',
+        completed: false,
+        owner_id: 2
+      };
+
+    const data = await fakeRequest(app)
+      .get('/api/monster_to_do/4')
+      .set('Authorization', token)
+      .expect('Content-Type', /json/)
+      .expect(200);
+
+    expect(data.body).toEqual(expected);
+
+    done();
+  });
+
+  test('updates a single todo for the user when hitting PUT /monster_to_do/:id', async(done) => {
+    const newToDo = {
+      id: 4,
+      todo: 'howl at the moon',
+      completed: false,
+      owner_id: 2
+    };
+
+    const expectedAllToDos = [{
+      id: 4,
+      todo: 'howl at the moon',
+      completed: false,
+      owner_id: 2
+    }];
+
+    const data = await fakeRequest(app)
+      .put('/api/monster_to_do/4')
+      .send(newToDo)
+      .set('Authorization', token)
+      .expect('Content-Type', /json/)
+      .expect(200);
+
+    const allToDos = await fakeRequest(app)
+      .get('/api/monster_to_do')
+      .send(newToDo)
+      .set('Authorization', token)
+      .expect('Content-Type', /json/)
+      .expect(200);
+
+    expect(data.body).toEqual(newToDo);
+    expect(allToDos.body).toEqual(expectedAllToDos);
+
+    done();
+  });
+});
